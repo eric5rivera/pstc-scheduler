@@ -515,7 +515,9 @@ class PSTCTui(App):
             if not self.query_one("#form").display:
                 self.query_one("#days", ListView).focus()
 
-    async def show_days_loading_placeholder(self, month: MonthOption) -> None:
+    async def show_days_loading_placeholder(self, month: MonthOption, index: int | None = None) -> None:
+        if index is not None and self.desired_month_index != index:
+            return
         self.days = []
         self.selected_day = None
         self.selected_time = None
@@ -741,11 +743,14 @@ class PSTCTui(App):
             self.force_focus_days_for_month_index = index
 
         cached_days = self.month_cache.get(self.month_cache_key(self.months[index]))
-        if show_cached and cached_days is not None:
-            # Show cached availability immediately for snappy navigation. The
-            # queue below still refreshes this month from the site in the
-            # background and updates the cache/UI when it finishes.
+        if show_cached and cached_days:
+            # Show cached availability immediately for snappy navigation. Empty
+            # cached results are not rendered optimistically because they may be
+            # a transient background fetch miss while the PSTC page is still
+            # adding appointment links.
             self.create_background_task(self.show_month_days(index, cached_days, from_cache=True))
+        elif show_cached and not self.query_one("#form").display:
+            self.create_background_task(self.show_days_loading_placeholder(self.months[index], index=index))
 
         if not self.month_load_task or self.month_load_task.done():
             self.month_load_task = self.create_background_task(self.process_month_load_queue())
@@ -766,7 +771,7 @@ class PSTCTui(App):
         month = self.months[index]
         cached_days = self.month_cache.get(self.month_cache_key(month))
 
-        if cached_days is not None:
+        if cached_days:
             await self.show_month_days(index, cached_days, from_cache=True)
         else:
             self.selected_month = month
@@ -1025,7 +1030,8 @@ class PSTCTui(App):
                     await self.show_month_days(index, days, from_cache=False)
 
             if self.selected_month and not self.query_one("#form").display:
-                self.set_status(f"Ready. Cached {len(self.month_cache)} month(s). Vim keys: h/l panels, j/k move, Enter select, q quit.")
+                cached_with_slots = sum(1 for days in self.month_cache.values() if days)
+                self.set_status(f"Ready. Cached availability for {cached_with_slots} month(s). Vim keys: h/l panels, j/k move, Enter select, q quit.")
         except asyncio.CancelledError:
             raise
         except Exception:
