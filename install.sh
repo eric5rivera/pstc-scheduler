@@ -5,6 +5,25 @@ APP_NAME="pstc-scheduler"
 REPO_URL="${PSTC_SCHEDULER_REPO_URL:-https://github.com/eric5rivera/pstc-scheduler.git}"
 INSTALL_DIR="${PSTC_SCHEDULER_INSTALL_DIR:-$HOME/.local/share/$APP_NAME}"
 PYTHON_BIN="${PYTHON:-python3}"
+UNINSTALL=0
+PURGE=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --uninstall) UNINSTALL=1 ;;
+    --purge) PURGE=1 ;;
+    -h|--help)
+      cat <<EOF
+Usage:
+  install.sh              Install or update $APP_NAME
+  install.sh --uninstall  Uninstall $APP_NAME
+  install.sh --purge      Uninstall and remove saved profile data
+EOF
+      exit 0
+      ;;
+    *) echo "Unknown option: $arg"; exit 1 ;;
+  esac
+done
 
 path_contains() {
   case ":$PATH:" in
@@ -23,6 +42,50 @@ elif [[ -d /usr/local/bin && -w /usr/local/bin ]] && path_contains /usr/local/bi
   BIN_DIR="/usr/local/bin"
 else
   BIN_DIR="$HOME/.local/bin"
+fi
+
+uninstall_app() {
+  local target="$INSTALL_DIR/.venv/bin/$APP_NAME"
+  local candidate
+  local removed=0
+
+  for candidate in \
+    "$BIN_DIR/$APP_NAME" \
+    "$HOME/.local/bin/$APP_NAME" \
+    "/opt/homebrew/bin/$APP_NAME" \
+    "/usr/local/bin/$APP_NAME"
+  do
+    if [[ -L "$candidate" && "$(readlink "$candidate")" == "$target" ]]; then
+      rm -f "$candidate"
+      echo "Removed $candidate"
+      removed=1
+    fi
+  done
+
+  if [[ -d "$INSTALL_DIR" ]]; then
+    rm -rf "$INSTALL_DIR"
+    echo "Removed $INSTALL_DIR"
+    removed=1
+  fi
+
+  if [[ "$PURGE" == "1" && -d "$HOME/.pstc-scheduler" ]]; then
+    rm -rf "$HOME/.pstc-scheduler"
+    echo "Removed $HOME/.pstc-scheduler"
+  fi
+
+  if [[ "$removed" == "0" ]]; then
+    echo "$APP_NAME does not appear to be installed."
+  else
+    echo "✅ $APP_NAME uninstalled."
+    if [[ "$PURGE" != "1" ]]; then
+      echo "Saved profile data was kept at $HOME/.pstc-scheduler. Use --purge to remove it."
+    fi
+  fi
+}
+
+if [[ "$UNINSTALL" == "1" || "$PURGE" == "1" ]]; then
+  uninstall_app
+  exit 0
 fi
 
 command -v git >/dev/null || { echo "git is required"; exit 1; }

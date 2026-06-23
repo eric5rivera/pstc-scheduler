@@ -29,6 +29,18 @@ To watch the browser while the TUI runs:
 pstc-scheduler --show-browser
 ```
 
+## Uninstall
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/eric5rivera/pstc-scheduler/main/install.sh | bash -s -- --uninstall
+```
+
+To also remove saved profile data from `~/.pstc-scheduler`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/eric5rivera/pstc-scheduler/main/install.sh | bash -s -- --purge
+```
+
 ## Configuration
 
 The TUI remembers booking form values locally after you type them, even if you go back or quit before submitting. Saved values live at:
