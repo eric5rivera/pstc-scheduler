@@ -41,7 +41,7 @@ This removes the installed command, the app directory under `~/.local/share/pstc
 
 ## Configuration
 
-The TUI remembers booking form values locally after you type them, even if you go back or quit before submitting. Saved values live at:
+The TUI remembers booking form values and startup preferences locally after you type them, even if you go back or quit before submitting. Saved values live at:
 
 ```text
 ~/.pstc-scheduler/profile.yaml
@@ -75,6 +75,15 @@ Run:
 pstc-scheduler
 ```
 
+By default, new users start in browse mode. To make the app auto-pick your usual appointment on future launches, select the desired day/time and press `a`. Press `a` again later to switch startup back to browsing first.
+
+One-off startup overrides:
+
+```bash
+pstc-scheduler --browse
+pstc-scheduler --auto-pick
+```
+
 General flow:
 
 1. Wait for availability to load.
@@ -84,7 +93,7 @@ General flow:
 5. Review/edit booking details.
 6. Submit when ready.
 
-Helpful controls are shown in the footer. The interface supports keyboard-driven navigation, including vim-style `h/j/k/l` movement.
+Helpful controls are shown in the footer. The interface supports keyboard-driven navigation, including vim-style `h/j/k/l` movement. Press `a` to toggle the saved startup behavior between browsing first and auto-picking your usual appointment.
 
 ## Development
 

@@ -26,6 +26,15 @@ PROFILE_FIELDS = {
     "participants": ("PSTC_PARTICIPANTS", "1"),
 }
 
+PREFERENCE_FIELDS = {
+    "startup_mode": "browse",  # browse | auto_pick
+    "default_weekday": "3",    # Monday=0, Thursday=3
+    "default_hour": "6",
+    "default_period": "PM",
+}
+
+WEEKDAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
 
 @dataclass
 class MonthOption:
@@ -142,9 +151,10 @@ class PSTCTui(App):
 
     LIST_IDS = ["months", "days", "times"]
 
-    def __init__(self, headless: bool = True):
+    def __init__(self, headless: bool = True, startup_mode: str | None = None):
         super().__init__()
         self.headless = headless
+        self.startup_mode_override = startup_mode
         self.playwright = None
         self.browser = None
         self.context = None
@@ -156,8 +166,6 @@ class PSTCTui(App):
         self.selected_day: DayOption | None = None
         self.selected_time: TimeOption | None = None
         self.cancellation_url: str | None = None
-        self.default_appointment_date = self.next_weekday_date(3)  # Thursday
-        self.default_appointment_hour = 6  # 6 PM, displayed as "6" in the TUI
         self.pending_month_index: int | None = None
         self.desired_month_index: int | None = None
         self.focus_days_after_month_load = False
@@ -176,6 +184,9 @@ class PSTCTui(App):
         self.previous_loop_exception_handler = None
 
         self.booking_profile = self.load_booking_profile()
+        self.default_appointment_date = self.next_weekday_date(self.default_weekday())
+        self.default_appointment_hour = self.default_hour()
+        self.default_appointment_period = self.default_period()
         self.loading = True
 
     def load_booking_profile(self) -> dict[str, str]:
@@ -188,11 +199,45 @@ class PSTCTui(App):
         if not isinstance(profile, dict):
             return {}
 
-        return {key: str(value) for key, value in profile.items() if key in PROFILE_FIELDS}
+        allowed_keys = set(PROFILE_FIELDS) | set(PREFERENCE_FIELDS)
+        return {key: str(value) for key, value in profile.items() if key in allowed_keys}
 
     def profile_value(self, key: str) -> str:
         env_name, default = PROFILE_FIELDS[key]
         return os.getenv(env_name, self.booking_profile.get(key, default))
+
+    def preference_value(self, key: str) -> str:
+        env_name = f"PSTC_{key.upper()}"
+        return os.getenv(env_name, self.booking_profile.get(key, PREFERENCE_FIELDS[key]))
+
+    def startup_mode(self) -> str:
+        mode = self.startup_mode_override or self.preference_value("startup_mode")
+        return mode if mode in {"browse", "auto_pick"} else "browse"
+
+    def default_weekday(self) -> int:
+        value = self.preference_value("default_weekday").strip()
+        if value.isdigit() and 0 <= int(value) <= 6:
+            return int(value)
+        for index, name in enumerate(WEEKDAY_NAMES):
+            if value.lower() == name.lower():
+                return index
+        return 3
+
+    def default_hour(self) -> int:
+        try:
+            hour = int(self.preference_value("default_hour"))
+            return hour if 1 <= hour <= 12 else 6
+        except ValueError:
+            return 6
+
+    def default_period(self) -> str:
+        period = self.preference_value("default_period").upper()
+        return period if period in {"AM", "PM"} else "PM"
+
+    def refresh_default_appointment(self) -> None:
+        self.default_appointment_date = self.next_weekday_date(self.default_weekday())
+        self.default_appointment_hour = self.default_hour()
+        self.default_appointment_period = self.default_period()
 
     def save_booking_profile(self) -> None:
         try:
@@ -200,6 +245,8 @@ class PSTCTui(App):
                 key: self.query_one(f"#{key}", Input).value
                 for key in PROFILE_FIELDS
             }
+            for key in PREFERENCE_FIELDS:
+                profile[key] = self.booking_profile.get(key, PREFERENCE_FIELDS[key])
             PROFILE_PATH.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
             temp_path = PROFILE_PATH.with_suffix(".yaml.tmp")
             with temp_path.open("w") as profile_file:
@@ -299,6 +346,33 @@ class PSTCTui(App):
         if event.input.id in PROFILE_FIELDS:
             self.save_booking_profile()
 
+    def describe_default_appointment(self) -> str:
+        weekday = WEEKDAY_NAMES[self.default_weekday()]
+        return f"next {weekday} at {self.default_hour()} {self.default_period()}"
+
+    def toggle_startup_behavior(self) -> None:
+        if self.startup_mode() == "auto_pick":
+            self.booking_profile["startup_mode"] = "browse"
+            self.save_booking_profile()
+            self.set_status("Startup behavior saved: browse availability first.")
+            self.set_details("Next launch will start by showing available appointments instead of auto-picking a usual slot.")
+            return
+
+        if self.selected_month and self.selected_day and self.selected_time:
+            selected_date = datetime(self.selected_month.year, self.selected_month.month_num, self.selected_day.day).date()
+            self.booking_profile["default_weekday"] = str(selected_date.weekday())
+            self.booking_profile["default_hour"] = str(self.selected_time.hour_choice)
+            self.booking_profile["default_period"] = "PM" if "PM" in self.selected_time.text.upper() else "AM"
+
+        self.booking_profile["startup_mode"] = "auto_pick"
+        self.refresh_default_appointment()
+        self.save_booking_profile()
+        self.set_status(f"Startup behavior saved: auto-pick {self.describe_default_appointment()}.")
+        self.set_details(
+            "Next launch will try to open the booking form for your usual appointment. "
+            "Press 'a' again any time to switch back to browsing first."
+        )
+
     async def on_key(self, event) -> None:
         # Vim-style navigation for the three appointment lists.
         form_visible = bool(self.query_one("#form").display)
@@ -321,6 +395,8 @@ class PSTCTui(App):
             await self.submit_booking()
         elif event.key == "x" and form_visible and self.query_one("#cancel_appointment", Button).display:
             await self.cancel_submitted_appointment()
+        elif event.key == "a":
+            self.toggle_startup_behavior()
         elif event.key in {"b", "c"} and form_visible:
             await self.cancel_booking_form()
         elif event.key == "j":
@@ -536,7 +612,13 @@ class PSTCTui(App):
 
             await self.load_months()
 
-            default_month_index = self.month_index_for_date(self.default_appointment_date)
+            auto_pick_defaults = self.startup_mode() == "auto_pick"
+            self.refresh_default_appointment()
+            default_month_index = (
+                self.month_index_for_date(self.default_appointment_date)
+                if auto_pick_defaults
+                else self.current_month_index()
+            )
             if default_month_index is None:
                 default_month_index = self.current_month_index()
 
@@ -546,7 +628,7 @@ class PSTCTui(App):
                 try:
                     month_list.index = default_month_index
                     month_list.focus()
-                    await self.select_month(default_month_index, auto_pick_defaults=True)
+                    await self.select_month(default_month_index, auto_pick_defaults=auto_pick_defaults)
                     await asyncio.sleep(0)
                 finally:
                     self.suppress_month_highlight = False
@@ -691,11 +773,11 @@ class PSTCTui(App):
         if auto_pick_defaults:
             await self.select_default_day_and_time()
             if self.selected_time:
-                self.stop_loading("Default selected: next Thursday at 6 PM for 4 people. Review, then submit.")
+                self.stop_loading(f"Default selected: {self.describe_default_appointment()}. Review, then submit.")
             else:
                 if focus_after_load:
                     self.query_one("#days", ListView).focus()
-                self.stop_loading(f"Loaded {month.name}. Default 6 PM Thursday was not available; choose manually.")
+                self.stop_loading(f"Loaded {month.name}. Default {self.describe_default_appointment()} was not available; choose manually.")
         else:
             # If the user picked a time and opened the booking form while this
             # refresh was still in-flight, don't overwrite the booking-page
@@ -942,7 +1024,7 @@ class PSTCTui(App):
         day_index = next((i for i, day in enumerate(self.days) if day.day == target.day), None)
         if day_index is None:
             self.set_details(
-                f"Default target is next Thursday, {target.strftime('%B')} {target.day}, "
+                f"Default target is {self.describe_default_appointment()}, {target.strftime('%B')} {target.day}, "
                 f"but that day has no available appointments."
             )
             return
@@ -957,14 +1039,14 @@ class PSTCTui(App):
         time_index = next(
             (
                 i for i, time in enumerate(self.selected_day.times)
-                if time.hour_choice == self.default_appointment_hour and "PM" in time.text.upper()
+                if time.hour_choice == self.default_appointment_hour and self.default_appointment_period in time.text.upper()
             ),
             None,
         )
         if time_index is None:
             self.set_details(
                 f"{self.selected_day.weekday}, {target.strftime('%B')} {target.day} is available, "
-                "but 6 PM is not. Choose another time."
+                f"but {self.default_appointment_hour} {self.default_appointment_period} is not. Choose another time."
             )
             return
 
@@ -1326,10 +1408,17 @@ class PSTCTui(App):
 
 
 def main() -> None:
-    import sys
+    import argparse
 
-    headless = "--show-browser" not in sys.argv
-    PSTCTui(headless=headless).run()
+    parser = argparse.ArgumentParser(description="PSTC appointment scheduler TUI")
+    parser.add_argument("--show-browser", action="store_true", help="Show the browser while the TUI runs")
+    startup_group = parser.add_mutually_exclusive_group()
+    startup_group.add_argument("--browse", action="store_true", help="Start by browsing availability, ignoring saved auto-pick preference")
+    startup_group.add_argument("--auto-pick", action="store_true", help="Start by auto-picking the saved usual appointment")
+    args = parser.parse_args()
+
+    startup_mode = "auto_pick" if args.auto_pick else "browse" if args.browse else None
+    PSTCTui(headless=not args.show_browser, startup_mode=startup_mode).run()
 
 
 if __name__ == "__main__":
