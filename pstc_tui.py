@@ -130,6 +130,17 @@ class PSTCTui(App):
         padding-right: 1;
     }
 
+    #startup_preference {
+        margin-top: 1;
+        margin-bottom: 1;
+        padding: 0 1;
+        border: solid $primary;
+    }
+
+    #startup_preference_description {
+        width: 1fr;
+    }
+
     #form_actions {
         margin-top: 1;
     }
@@ -146,6 +157,7 @@ class PSTCTui(App):
 
     BINDINGS = [
         ("q", "quit", "Quit"),
+        ("a", "toggle_startup_behavior", "Startup mode"),
         ("ctrl+c", "quit", "Quit"),
     ]
 
@@ -292,6 +304,9 @@ class PSTCTui(App):
             with Horizontal(classes="field-row"):
                 yield Label("Shooters", classes="field-label")
                 yield Input(value=self.profile_value("participants"), placeholder="Participants", id="participants")
+            with Horizontal(id="startup_preference"):
+                yield Static("", id="startup_preference_description")
+                yield Button("", id="startup_toggle")
             with Horizontal(id="form_actions"):
                 yield Button("Submit Booking (Enter/s)", id="submit", variant="success", disabled=True)
                 yield Button("Back to Times (b/Esc)", id="cancel", variant="error")
@@ -305,6 +320,7 @@ class PSTCTui(App):
         self.set_status("pstc-scheduler is starting browser and fetching availability in the background...")
         self.set_details("Loading pstc-scheduler... The interface is ready; availability will appear shortly.")
         self.query_one("#cancel_appointment", Button).display = False
+        self.update_startup_preference_ui()
         self.init_task = self.create_background_task(self.initialize_scheduler())
 
     async def on_unmount(self) -> None:
@@ -350,10 +366,33 @@ class PSTCTui(App):
         weekday = WEEKDAY_NAMES[self.default_weekday()]
         return f"next {weekday} at {self.default_hour()} {self.default_period()}"
 
+    def update_startup_preference_ui(self) -> None:
+        try:
+            mode = self.startup_mode()
+            if mode == "auto_pick":
+                description = f"Startup: auto-pick {self.describe_default_appointment()}. Press 'a' to browse first instead."
+                button_label = "✓ Auto-pick usual (a)"
+                variant = "success"
+            else:
+                description = "Startup: browse availability first. Press 'a' to make this selected slot your usual."
+                button_label = "○ Browse first (a)"
+                variant = "primary"
+
+            self.query_one("#startup_preference_description", Static).update(description)
+            toggle = self.query_one("#startup_toggle", Button)
+            toggle.label = button_label
+            toggle.variant = variant
+        except Exception:
+            pass
+
+    def action_toggle_startup_behavior(self) -> None:
+        self.toggle_startup_behavior()
+
     def toggle_startup_behavior(self) -> None:
         if self.startup_mode() == "auto_pick":
             self.booking_profile["startup_mode"] = "browse"
             self.save_booking_profile()
+            self.update_startup_preference_ui()
             self.set_status("Startup behavior saved: browse availability first.")
             self.set_details("Next launch will start by showing available appointments instead of auto-picking a usual slot.")
             return
@@ -367,6 +406,7 @@ class PSTCTui(App):
         self.booking_profile["startup_mode"] = "auto_pick"
         self.refresh_default_appointment()
         self.save_booking_profile()
+        self.update_startup_preference_ui()
         self.set_status(f"Startup behavior saved: auto-pick {self.describe_default_appointment()}.")
         self.set_details(
             "Next launch will try to open the booking form for your usual appointment. "
@@ -395,8 +435,6 @@ class PSTCTui(App):
             await self.submit_booking()
         elif event.key == "x" and form_visible and self.query_one("#cancel_appointment", Button).display:
             await self.cancel_submitted_appointment()
-        elif event.key == "a":
-            self.toggle_startup_behavior()
         elif event.key in {"b", "c"} and form_visible:
             await self.cancel_booking_form()
         elif event.key == "j":
@@ -1127,6 +1165,7 @@ class PSTCTui(App):
         )
         self.query_one("#form").display = True
         self.query_one("#submit", Button).disabled = False
+        self.update_startup_preference_ui()
         self.set_details("Ready to book. Review the booking info below, then submit or go back to choose another time.")
         self.set_status("Review booking info. Submit: Enter or s. Back to times: ←, h, b, c, or Esc.")
 
@@ -1135,6 +1174,8 @@ class PSTCTui(App):
             await self.cancel_booking_form()
         elif event.button.id == "submit":
             await self.submit_booking()
+        elif event.button.id == "startup_toggle":
+            self.toggle_startup_behavior()
         elif event.button.id == "cancel_appointment":
             await self.cancel_submitted_appointment()
 

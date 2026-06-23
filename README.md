@@ -75,7 +75,7 @@ Run:
 pstc-scheduler
 ```
 
-By default, new users start in browse mode. To make the app auto-pick your usual appointment on future launches, select the desired day/time and press `a`. Press `a` again later to switch startup back to browsing first.
+By default, new users start in browse mode. To make the app auto-pick your usual appointment on future launches, select the desired day/time and use the startup toggle on the booking form, or press `a`. Use the toggle or press `a` again later to switch startup back to browsing first.
 
 One-off startup overrides:
 
@@ -93,7 +93,7 @@ General flow:
 5. Review/edit booking details.
 6. Submit when ready.
 
-Helpful controls are shown in the footer. The interface supports keyboard-driven navigation, including vim-style `h/j/k/l` movement. Press `a` to toggle the saved startup behavior between browsing first and auto-picking your usual appointment.
+Helpful controls are shown in the footer. The interface supports keyboard-driven navigation, including vim-style `h/j/k/l` movement. The booking form includes a startup preference toggle with the `a` shortcut hint.
 
 ## Development
 
