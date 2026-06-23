@@ -17,30 +17,17 @@ This project uses [Textual](https://textual.textualize.io/) for the TUI and [Pla
 ## Quick start
 
 ```bash
-git clone https://github.com/YOUR_GITHUB_USERNAME/pstc-scheduler.git
-cd pstc-scheduler
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-python -m playwright install chromium
-cp .env.example .env
-$EDITOR .env
+curl -fsSL https://raw.githubusercontent.com/eric5rivera/pstc-scheduler/main/install.sh | bash
 pstc-scheduler
 ```
+
+The installer clones/updates the repo under `~/.local/share/pstc-scheduler`, creates a virtual environment, installs dependencies, installs Playwright Chromium, and symlinks `pstc-scheduler` into `~/.local/bin`.
 
 To watch the browser while the TUI runs:
 
 ```bash
 pstc-scheduler --show-browser
 ```
-
-## One-line install
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/eric5rivera/pstc-scheduler/main/install.sh | bash
-```
-
-The installer clones/updates the repo under `~/.local/share/pstc-scheduler`, creates a virtual environment, installs dependencies, installs Playwright Chromium, and symlinks `pstc-scheduler` into `~/.local/bin`.
 
 ## Configuration
 
@@ -92,6 +79,8 @@ Helpful controls are shown in the footer. The interface supports keyboard-driven
 ## Development
 
 ```bash
+git clone https://github.com/eric5rivera/pstc-scheduler.git
+cd pstc-scheduler
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
