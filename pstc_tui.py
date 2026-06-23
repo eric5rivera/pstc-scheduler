@@ -130,15 +130,12 @@ class PSTCTui(App):
         padding-right: 1;
     }
 
-    #startup_preference {
-        margin-top: 1;
-        margin-bottom: 1;
-        padding: 0 1;
-        border: solid $primary;
-    }
-
     #form_actions {
         margin-top: 1;
+    }
+
+    #form_action_spacer {
+        width: 1fr;
     }
 
     Input {
@@ -300,13 +297,12 @@ class PSTCTui(App):
             with Horizontal(classes="field-row"):
                 yield Label("Shooters", classes="field-label")
                 yield Input(value=self.profile_value("participants"), placeholder="Participants", id="participants")
-            with Horizontal(id="startup_preference"):
-                yield Label("Startup", classes="field-label")
-                yield Button("", id="startup_toggle")
             with Horizontal(id="form_actions"):
                 yield Button("Submit Booking (Enter/s)", id="submit", variant="success", disabled=True)
                 yield Button("Back to Times (b/Esc)", id="cancel", variant="error")
                 yield Button("Cancel Appointment (x)", id="cancel_appointment", variant="warning")
+                yield Static("", id="form_action_spacer")
+                yield Button("", id="startup_toggle")
         yield Footer()
 
     async def on_mount(self) -> None:
@@ -366,11 +362,11 @@ class PSTCTui(App):
         try:
             mode = self.startup_mode()
             if mode == "auto_pick":
-                button_label = "✓ Auto-pick usual (a)"
-                variant = "success"
+                button_label = "Startup: Auto (a)"
+                variant = "default"
             else:
-                button_label = "○ Browse first (a)"
-                variant = "primary"
+                button_label = "Startup: Browse (a)"
+                variant = "default"
 
             toggle = self.query_one("#startup_toggle", Button)
             toggle.label = button_label
