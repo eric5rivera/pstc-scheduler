@@ -210,7 +210,7 @@ Installed command:
   $BIN_DIR/pstc-scheduler
 
 If this shell does not find or autocomplete pstc-scheduler yet, refresh its command cache:
-  rehash 2>/dev/null || hash -r 2>/dev/null || true
+  hash -rf 2>/dev/null || rehash 2>/dev/null || hash -r 2>/dev/null || true
 EOF
 
 if ! path_contains "$BIN_DIR"; then

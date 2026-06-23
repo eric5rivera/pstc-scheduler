@@ -17,7 +17,7 @@ This project uses [Textual](https://textual.textualize.io/) for the TUI and [Pla
 ## Quick start
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/eric5rivera/pstc-scheduler/main/install.sh | bash && { rehash 2>/dev/null || hash -r 2>/dev/null || true; }
+curl -fsSL https://raw.githubusercontent.com/eric5rivera/pstc-scheduler/main/install.sh | bash && { hash -rf 2>/dev/null || rehash 2>/dev/null || hash -r 2>/dev/null || true; }
 pstc-scheduler
 ```
 
