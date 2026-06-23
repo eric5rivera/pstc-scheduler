@@ -21,7 +21,7 @@ curl -fsSL https://raw.githubusercontent.com/eric5rivera/pstc-scheduler/main/ins
 pstc-scheduler
 ```
 
-The installer clones/updates the repo under `~/.local/share/pstc-scheduler`, creates a virtual environment, installs dependencies, installs Playwright Chromium, and symlinks `pstc-scheduler` into `~/.local/bin`.
+The installer clones/updates the repo under `~/.local/share/pstc-scheduler`, creates a virtual environment, installs dependencies, installs Playwright Chromium, and symlinks `pstc-scheduler` into a writable bin directory on your `PATH` when possible.
 
 To watch the browser while the TUI runs:
 
