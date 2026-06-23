@@ -2,16 +2,10 @@
 set -euo pipefail
 
 APP_NAME="pstc-scheduler"
-REPO_URL="${PSTC_SCHEDULER_REPO_URL:-https://github.com/YOUR_GITHUB_USERNAME/pstc-scheduler.git}"
+REPO_URL="${PSTC_SCHEDULER_REPO_URL:-https://github.com/eric5rivera/pstc-scheduler.git}"
 INSTALL_DIR="${PSTC_SCHEDULER_INSTALL_DIR:-$HOME/.local/share/$APP_NAME}"
 BIN_DIR="${PSTC_SCHEDULER_BIN_DIR:-$HOME/.local/bin}"
 PYTHON_BIN="${PYTHON:-python3}"
-
-if [[ "$REPO_URL" == *"YOUR_GITHUB_USERNAME"* ]]; then
-  echo "Set PSTC_SCHEDULER_REPO_URL to your GitHub repo URL, or replace YOUR_GITHUB_USERNAME in install.sh."
-  echo "Example: curl -fsSL https://raw.githubusercontent.com/USER/pstc-scheduler/main/install.sh | PSTC_SCHEDULER_REPO_URL=https://github.com/USER/pstc-scheduler.git bash"
-  exit 1
-fi
 
 command -v git >/dev/null || { echo "git is required"; exit 1; }
 command -v "$PYTHON_BIN" >/dev/null || { echo "python3 is required"; exit 1; }

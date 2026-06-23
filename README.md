@@ -36,17 +36,8 @@ pstc-scheduler --show-browser
 
 ## One-line install
 
-After this repo is published to GitHub, update `YOUR_GITHUB_USERNAME` in `install.sh` and this README. Then users can install with:
-
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/pstc-scheduler/main/install.sh | bash
-```
-
-Until the placeholder is replaced, this also works:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/pstc-scheduler/main/install.sh \
-  | PSTC_SCHEDULER_REPO_URL=https://github.com/YOUR_GITHUB_USERNAME/pstc-scheduler.git bash
+curl -fsSL https://raw.githubusercontent.com/eric5rivera/pstc-scheduler/main/install.sh | bash
 ```
 
 The installer clones/updates the repo under `~/.local/share/pstc-scheduler`, creates a virtual environment, installs dependencies, installs Playwright Chromium, and symlinks `pstc-scheduler` into `~/.local/bin`.
