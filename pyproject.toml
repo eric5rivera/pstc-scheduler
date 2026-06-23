@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pstc-scheduler"
+version = "0.1.0"
+description = "A terminal UI for scheduling range appointments at the Clackamas County Sheriff's Office Public Safety Training Center."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Eric Rivera" }]
+dependencies = [
+  "python-dotenv",
+  "playwright",
+  "PyYAML",
+  "textual",
+]
+
+[project.urls]
+Homepage = "https://github.com/YOUR_GITHUB_USERNAME/pstc-scheduler"
+Repository = "https://github.com/YOUR_GITHUB_USERNAME/pstc-scheduler"
+
+[project.scripts]
+pstc-scheduler = "pstc_tui:main"
+pstc-scheduler-classic = "pstc_scheduler_classic:book_pstc_interactive"
+
+[tool.setuptools]
+py-modules = ["pstc_tui", "pstc_scheduler_classic"]

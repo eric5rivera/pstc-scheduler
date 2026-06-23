@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Local config / secrets
+.env
+.env.*
+!.env.example
+
+# Playwright / debug artifacts
+pstc_error.png
+playwright-report/
+test-results/
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
