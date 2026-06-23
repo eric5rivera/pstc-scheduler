@@ -6,18 +6,15 @@ REPO_URL="${PSTC_SCHEDULER_REPO_URL:-https://github.com/eric5rivera/pstc-schedul
 INSTALL_DIR="${PSTC_SCHEDULER_INSTALL_DIR:-$HOME/.local/share/$APP_NAME}"
 PYTHON_BIN="${PYTHON:-python3}"
 UNINSTALL=0
-PURGE=0
 
 for arg in "$@"; do
   case "$arg" in
     --uninstall) UNINSTALL=1 ;;
-    --purge) PURGE=1 ;;
     -h|--help)
       cat <<EOF
 Usage:
   install.sh              Install or update $APP_NAME
-  install.sh --uninstall  Uninstall $APP_NAME
-  install.sh --purge      Uninstall and remove saved profile data
+  install.sh --uninstall  Completely uninstall $APP_NAME and remove saved data
 EOF
       exit 0
       ;;
@@ -44,6 +41,13 @@ else
   BIN_DIR="$HOME/.local/bin"
 fi
 
+remove_empty_dir() {
+  local dir="$1"
+  if [[ -d "$dir" ]] && rmdir "$dir" 2>/dev/null; then
+    echo "Removed empty directory $dir"
+  fi
+}
+
 uninstall_app() {
   local target="$INSTALL_DIR/.venv/bin/$APP_NAME"
   local candidate
@@ -68,22 +72,24 @@ uninstall_app() {
     removed=1
   fi
 
-  if [[ "$PURGE" == "1" && -d "$HOME/.pstc-scheduler" ]]; then
+  if [[ -d "$HOME/.pstc-scheduler" ]]; then
     rm -rf "$HOME/.pstc-scheduler"
     echo "Removed $HOME/.pstc-scheduler"
+    removed=1
   fi
+
+  remove_empty_dir "$BIN_DIR"
+  remove_empty_dir "$(dirname "$INSTALL_DIR")"
+  remove_empty_dir "$HOME/.local"
 
   if [[ "$removed" == "0" ]]; then
     echo "$APP_NAME does not appear to be installed."
   else
-    echo "✅ $APP_NAME uninstalled."
-    if [[ "$PURGE" != "1" ]]; then
-      echo "Saved profile data was kept at $HOME/.pstc-scheduler. Use --purge to remove it."
-    fi
+    echo "✅ $APP_NAME completely uninstalled."
   fi
 }
 
-if [[ "$UNINSTALL" == "1" || "$PURGE" == "1" ]]; then
+if [[ "$UNINSTALL" == "1" ]]; then
   uninstall_app
   exit 0
 fi

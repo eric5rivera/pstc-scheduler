@@ -35,11 +35,7 @@ pstc-scheduler --show-browser
 curl -fsSL https://raw.githubusercontent.com/eric5rivera/pstc-scheduler/main/install.sh | bash -s -- --uninstall
 ```
 
-To also remove saved profile data from `~/.pstc-scheduler`:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/eric5rivera/pstc-scheduler/main/install.sh | bash -s -- --purge
-```
+This removes the installed command, the app directory under `~/.local/share/pstc-scheduler`, saved profile data under `~/.pstc-scheduler`, and any now-empty directories the installer created.
 
 ## Configuration
 
