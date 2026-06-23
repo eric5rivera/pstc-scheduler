@@ -386,8 +386,7 @@ class PSTCTui(App):
             self.booking_profile["startup_mode"] = "browse"
             self.save_booking_profile()
             self.update_startup_preference_ui()
-            self.set_status("Startup behavior saved: browse availability first.")
-            self.set_details("Next launch will start by showing available appointments instead of auto-picking a usual slot.")
+            self.set_status("Startup: browse first.")
             return
 
         if self.selected_month and self.selected_day and self.selected_time:
@@ -400,11 +399,7 @@ class PSTCTui(App):
         self.refresh_default_appointment()
         self.save_booking_profile()
         self.update_startup_preference_ui()
-        self.set_status(f"Startup behavior saved: auto-pick {self.describe_default_appointment()}.")
-        self.set_details(
-            "Next launch will try to open the booking form for your usual appointment. "
-            "Press 'a' again any time to switch back to browsing first."
-        )
+        self.set_status(f"Startup: auto-pick {self.describe_default_appointment()}.")
 
     async def on_key(self, event) -> None:
         # Vim-style navigation for the three appointment lists.
