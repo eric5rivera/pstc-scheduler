@@ -4,7 +4,7 @@ set -euo pipefail
 APP_NAME="pstc-scheduler"
 REPO_URL="${PSTC_SCHEDULER_REPO_URL:-https://github.com/eric5rivera/pstc-scheduler.git}"
 INSTALL_DIR="${PSTC_SCHEDULER_INSTALL_DIR:-$HOME/.local/share/$APP_NAME}"
-PYTHON_BIN="${PYTHON:-python3}"
+PYTHON_BIN="${PYTHON:-}"
 UNINSTALL=0
 
 for arg in "$@"; do
@@ -107,6 +107,38 @@ have_sudo() {
   command -v sudo >/dev/null && sudo -v
 }
 
+python_works() {
+  local candidate="$1"
+  command -v "$candidate" >/dev/null || return 1
+  "$candidate" - <<'PY' >/dev/null 2>&1
+import sys
+raise SystemExit(0 if sys.version_info >= (3, 10) else 1)
+PY
+}
+
+select_python_bin() {
+  local candidate
+
+  if [[ -n "${PYTHON:-}" ]]; then
+    PYTHON_BIN="$PYTHON"
+    return 0
+  fi
+
+  for candidate in \
+    "/opt/homebrew/bin/python3" \
+    "/usr/local/bin/python3" \
+    "python3"
+  do
+    if python_works "$candidate"; then
+      PYTHON_BIN="$candidate"
+      return 0
+    fi
+  done
+
+  PYTHON_BIN="python3"
+  return 1
+}
+
 install_ubuntu_dependencies() {
   echo "Checking Ubuntu/Debian dependencies..."
 
@@ -133,7 +165,7 @@ EOF
     exit 1
   fi
 
-  if ! command -v "$PYTHON_BIN" >/dev/null; then
+  if [[ -z "$PYTHON_BIN" ]] || ! python_works "$PYTHON_BIN"; then
     cat <<EOF
 python3 is required.
 
@@ -147,23 +179,22 @@ EOF
 }
 
 ensure_dependencies() {
+  select_python_bin || true
+
   if is_linux && is_ubuntu_like; then
-    if ! command -v git >/dev/null || ! command -v "$PYTHON_BIN" >/dev/null || ! "$PYTHON_BIN" -m venv --help >/dev/null 2>&1; then
+    if ! command -v git >/dev/null || ! python_works "$PYTHON_BIN" || ! "$PYTHON_BIN" -m venv --help >/dev/null 2>&1; then
       install_ubuntu_dependencies
+      select_python_bin || true
     fi
   elif is_macos; then
     check_macos_dependencies
   fi
 
   command -v git >/dev/null || { echo "git is required"; exit 1; }
-  command -v "$PYTHON_BIN" >/dev/null || { echo "python3 is required"; exit 1; }
 
-  if ! "$PYTHON_BIN" - <<'PY' >/dev/null 2>&1
-import sys
-raise SystemExit(0 if sys.version_info >= (3, 10) else 1)
-PY
-  then
-    echo "Python 3.10 or newer is required. Found: $($PYTHON_BIN --version 2>&1)"
+  if ! python_works "$PYTHON_BIN"; then
+    echo "Python 3.10+ is required, and the selected Python is not usable: $PYTHON_BIN"
+    echo "If you use pyenv, your Python may be linked to a missing Homebrew library. Try: brew install gettext"
     exit 1
   fi
 
@@ -186,6 +217,7 @@ else
   git clone "$REPO_URL" "$INSTALL_DIR"
 fi
 
+rm -rf "$INSTALL_DIR/.venv"
 "$PYTHON_BIN" -m venv "$INSTALL_DIR/.venv"
 "$INSTALL_DIR/.venv/bin/python" -m pip install --upgrade pip
 "$INSTALL_DIR/.venv/bin/python" -m pip install -e "$INSTALL_DIR"
