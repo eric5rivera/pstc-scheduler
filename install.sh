@@ -94,8 +94,86 @@ if [[ "$UNINSTALL" == "1" ]]; then
   exit 0
 fi
 
-command -v git >/dev/null || { echo "git is required"; exit 1; }
-command -v "$PYTHON_BIN" >/dev/null || { echo "python3 is required"; exit 1; }
+is_macos() { [[ "$(uname -s)" == "Darwin" ]]; }
+is_linux() { [[ "$(uname -s)" == "Linux" ]]; }
+is_ubuntu_like() {
+  [[ -r /etc/os-release ]] || return 1
+  # shellcheck disable=SC1091
+  . /etc/os-release
+  [[ "${ID:-}" == "ubuntu" || "${ID:-}" == "debian" || "${ID_LIKE:-}" == *"ubuntu"* || "${ID_LIKE:-}" == *"debian"* ]]
+}
+
+have_sudo() {
+  command -v sudo >/dev/null && sudo -v
+}
+
+install_ubuntu_dependencies() {
+  echo "Checking Ubuntu/Debian dependencies..."
+
+  if ! have_sudo; then
+    echo "sudo is required to install missing system packages."
+    exit 1
+  fi
+
+  sudo apt-get update
+  sudo apt-get install -y git python3 python3-venv python3-pip ca-certificates
+}
+
+check_macos_dependencies() {
+  if ! command -v git >/dev/null; then
+    cat <<EOF
+git is required.
+
+On macOS, install Apple's Command Line Tools, then rerun this installer:
+  xcode-select --install
+EOF
+    if command -v xcode-select >/dev/null; then
+      xcode-select --install 2>/dev/null || true
+    fi
+    exit 1
+  fi
+
+  if ! command -v "$PYTHON_BIN" >/dev/null; then
+    cat <<EOF
+python3 is required.
+
+Install Python 3.10+ from https://www.python.org/downloads/macos/ or with Homebrew:
+  brew install python
+
+Then rerun this installer.
+EOF
+    exit 1
+  fi
+}
+
+ensure_dependencies() {
+  if is_linux && is_ubuntu_like; then
+    if ! command -v git >/dev/null || ! command -v "$PYTHON_BIN" >/dev/null || ! "$PYTHON_BIN" -m venv --help >/dev/null 2>&1; then
+      install_ubuntu_dependencies
+    fi
+  elif is_macos; then
+    check_macos_dependencies
+  fi
+
+  command -v git >/dev/null || { echo "git is required"; exit 1; }
+  command -v "$PYTHON_BIN" >/dev/null || { echo "python3 is required"; exit 1; }
+
+  if ! "$PYTHON_BIN" - <<'PY' >/dev/null 2>&1
+import sys
+raise SystemExit(0 if sys.version_info >= (3, 10) else 1)
+PY
+  then
+    echo "Python 3.10 or newer is required. Found: $($PYTHON_BIN --version 2>&1)"
+    exit 1
+  fi
+
+  if ! "$PYTHON_BIN" -m venv --help >/dev/null 2>&1; then
+    echo "Python venv support is required. On Ubuntu, install python3-venv."
+    exit 1
+  fi
+}
+
+ensure_dependencies
 
 mkdir -p "$INSTALL_DIR" "$BIN_DIR"
 
@@ -111,6 +189,12 @@ fi
 "$PYTHON_BIN" -m venv "$INSTALL_DIR/.venv"
 "$INSTALL_DIR/.venv/bin/python" -m pip install --upgrade pip
 "$INSTALL_DIR/.venv/bin/python" -m pip install -e "$INSTALL_DIR"
+
+if is_linux && is_ubuntu_like; then
+  echo "Installing Playwright Chromium system dependencies..."
+  "$INSTALL_DIR/.venv/bin/python" -m playwright install-deps chromium
+fi
+
 "$INSTALL_DIR/.venv/bin/python" -m playwright install chromium
 
 ln -sf "$INSTALL_DIR/.venv/bin/pstc-scheduler" "$BIN_DIR/pstc-scheduler"

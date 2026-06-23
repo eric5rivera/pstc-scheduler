@@ -18,8 +18,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/YOUR_GITHUB_USERNAME/pstc-scheduler"
-Repository = "https://github.com/YOUR_GITHUB_USERNAME/pstc-scheduler"
+Homepage = "https://github.com/eric5rivera/pstc-scheduler"
+Repository = "https://github.com/eric5rivera/pstc-scheduler"
 
 [project.scripts]
 pstc-scheduler = "pstc_tui:main"

@@ -21,7 +21,9 @@ curl -fsSL https://raw.githubusercontent.com/eric5rivera/pstc-scheduler/main/ins
 pstc-scheduler
 ```
 
-The installer clones/updates the repo under `~/.local/share/pstc-scheduler`, creates a virtual environment, installs dependencies, installs Playwright Chromium, and symlinks `pstc-scheduler` into a writable bin directory on your `PATH` when possible.
+The installer clones/updates the repo under `~/.local/share/pstc-scheduler`, creates a virtual environment, installs Python dependencies, installs Playwright Chromium, and symlinks `pstc-scheduler` into a writable bin directory on your `PATH` when possible.
+
+On Ubuntu/Debian, it also installs missing system packages with `sudo apt-get` and runs Playwright's Chromium dependency installer. On macOS, it checks for Git and Python 3.10+ and tells you how to install them if they are missing.
 
 To watch the browser while the TUI runs:
 
