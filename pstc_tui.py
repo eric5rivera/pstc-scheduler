@@ -137,10 +137,6 @@ class PSTCTui(App):
         border: solid $primary;
     }
 
-    #startup_preference_description {
-        width: 1fr;
-    }
-
     #form_actions {
         margin-top: 1;
     }
@@ -305,7 +301,7 @@ class PSTCTui(App):
                 yield Label("Shooters", classes="field-label")
                 yield Input(value=self.profile_value("participants"), placeholder="Participants", id="participants")
             with Horizontal(id="startup_preference"):
-                yield Static("", id="startup_preference_description")
+                yield Label("Startup", classes="field-label")
                 yield Button("", id="startup_toggle")
             with Horizontal(id="form_actions"):
                 yield Button("Submit Booking (Enter/s)", id="submit", variant="success", disabled=True)
@@ -370,15 +366,12 @@ class PSTCTui(App):
         try:
             mode = self.startup_mode()
             if mode == "auto_pick":
-                description = f"Startup: auto-pick {self.describe_default_appointment()}. Press 'a' to browse first instead."
                 button_label = "✓ Auto-pick usual (a)"
                 variant = "success"
             else:
-                description = "Startup: browse availability first. Press 'a' to make this selected slot your usual."
                 button_label = "○ Browse first (a)"
                 variant = "primary"
 
-            self.query_one("#startup_preference_description", Static).update(description)
             toggle = self.query_one("#startup_toggle", Button)
             toggle.label = button_label
             toggle.variant = variant

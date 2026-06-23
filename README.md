@@ -93,7 +93,7 @@ General flow:
 5. Review/edit booking details.
 6. Submit when ready.
 
-Helpful controls are shown in the footer. The interface supports keyboard-driven navigation, including vim-style `h/j/k/l` movement. The booking form includes a startup preference toggle with the `a` shortcut hint.
+Helpful controls are shown in the footer. The interface supports keyboard-driven navigation, including vim-style `h/j/k/l` movement. The booking form includes a compact startup toggle with the `a` shortcut hint.
 
 ## Development
 
