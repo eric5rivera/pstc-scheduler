@@ -166,10 +166,22 @@ EOF
   fi
 
   if [[ -z "$PYTHON_BIN" ]] || ! python_works "$PYTHON_BIN"; then
-    cat <<EOF
-python3 is required.
+    if command -v brew >/dev/null; then
+      echo "Installing a usable Python with Homebrew..."
+      brew install python
+      select_python_bin || true
+    fi
+  fi
 
-Install Python 3.10+ from https://www.python.org/downloads/macos/ or with Homebrew:
+  if [[ -z "$PYTHON_BIN" ]] || ! python_works "$PYTHON_BIN"; then
+    cat <<EOF
+python3 3.10+ is required, but no usable Python was found.
+
+If you use pyenv, your current Python may be linked to a missing Homebrew library.
+You can usually fix that with:
+  brew install gettext
+
+Or install Python 3.10+ from https://www.python.org/downloads/macos/ or Homebrew:
   brew install python
 
 Then rerun this installer.
